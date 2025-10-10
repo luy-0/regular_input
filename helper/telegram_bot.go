@@ -48,6 +48,12 @@ func (bot *TelegramBot) SendText(title, content string) (map[string]interface{},
 	return bot.sendMessage("sendMessage", payload)
 }
 
+// Push 实现 MessagePusher 接口
+func (bot *TelegramBot) Push(message string) error {
+	_, err := bot.SendText("定投通知", message)
+	return err
+}
+
 func (bot *TelegramBot) TestPush() bool {
 	// 发送测试消息进行健康检查
 	testMsg := NewMessage("每日定投", "测试Telegram推送器")

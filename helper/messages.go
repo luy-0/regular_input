@@ -84,3 +84,9 @@ func generateMessageID(title string) string {
 
 	return fmt.Sprintf("%s_%s_%s", title, dateStr, nanoStr)
 }
+
+// MessagePusher 消息推送器接口
+type MessagePusher interface {
+	Push(message string) error
+	TestPush() bool
+}

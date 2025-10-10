@@ -55,6 +55,12 @@ func (bot *LarkBot) SendText(title, content string) (map[string]interface{}, err
 	return bot.sendMessage(payload)
 }
 
+// Push 实现 MessagePusher 接口
+func (bot *LarkBot) Push(message string) error {
+	_, err := bot.SendText("定投通知", message)
+	return err
+}
+
 // TestPush performs a health check by sending a test message
 func (bot *LarkBot) TestPush() bool {
 	// 发送测试消息进行健康检查

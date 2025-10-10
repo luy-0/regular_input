@@ -19,8 +19,24 @@ func NewWeChatPusher(sendKey string) *WeChatPusher {
 	}
 }
 
-// Push 推送消息
-func (w *WeChatPusher) Push(msg Message) error {
+// Push 实现 MessagePusher 接口
+func (w *WeChatPusher) Push(message string) error {
+	// 发送消息
+	resp, err := serverchan.ScSend(w.sendKey, "定投通知", message, nil)
+	if err != nil {
+		return fmt.Errorf("微信推送失败: %w", err)
+	}
+
+	// 检查响应
+	if resp != nil && resp.Code != 0 {
+		return fmt.Errorf("微信推送失败: %s", resp.Message)
+	}
+
+	return nil
+}
+
+// PushMessage 推送消息（旧接口，保持兼容性）
+func (w *WeChatPusher) PushMessage(msg Message) error {
 	// 构建消息内容
 	content := BuildMessageContent(msg)
 
@@ -42,7 +58,8 @@ func (w *WeChatPusher) Push(msg Message) error {
 func (w *WeChatPusher) TestPush() bool {
 	// 发送测试消息进行健康检查
 	testMsg := NewMessage("每日定投", "测试微信推送器")
-	err := w.Push(*testMsg)
+	content := BuildMessageContent(*testMsg)
+	err := w.Push(content)
 	return err == nil
 }
 

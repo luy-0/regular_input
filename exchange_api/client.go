@@ -1,4 +1,4 @@
-package ccxt
+package exchange_api
 
 import (
 	"context"
