@@ -112,7 +112,24 @@ DEBUG=true
 
 ### 4. 运行程序
 
-#### 方式一：直接运行
+#### 方式一：使用 Makefile（推荐）
+
+```bash
+# 查看所有可用命令
+make help
+
+# 快速开始
+make config    # 创建配置文件
+make env       # 创建环境变量文件
+make dev       # 开发模式运行
+
+# Docker 部署
+make build-docker  # 构建镜像
+make run          # 运行容器
+make logs         # 查看日志
+```
+
+#### 方式二：直接运行
 
 ```bash
 # 安装依赖
@@ -122,11 +139,11 @@ go mod tidy
 go run main.go
 ```
 
-#### 方式二：Docker 运行
+#### 方式三：Docker 手动运行
 
 ```bash
 # 构建镜像
-docker build -t regular-input .
+docker build -t btc-dca-bot .
 
 # 运行容器
 docker run -d \
@@ -136,7 +153,7 @@ docker run -d \
   -e BINANCE_SECRET_KEY=your_secret_key \
   -e TELEGRAM_BOT_TOKEN=your_bot_token \
   -e TELEGRAM_CHAT_ID=your_chat_id \
-  regular-input
+  btc-dca-bot
 ```
 
 ## 配置说明
@@ -190,6 +207,77 @@ AHR999 是一个用于判断比特币投资时机的指标：
 3. **测试模式**: 建议先在调试模式下测试，确认无误后再切换到生产模式
 4. **资金安全**: 建议使用小额资金进行测试
 
+## Makefile 命令说明
+
+本项目提供了丰富的 Makefile 命令来简化开发、构建和部署流程：
+
+### 📦 构建相关
+
+```bash
+make build        # 构建 Go 二进制文件
+make build-docker # 构建 Docker 镜像
+make deps         # 安装 Go 依赖
+make clean        # 清理构建文件
+```
+
+### 🐳 Docker 相关
+
+```bash
+make run          # 运行 Docker 容器
+make stop         # 停止 Docker 容器
+make logs         # 查看容器日志
+make shell        # 进入容器 shell
+make status       # 查看容器状态
+```
+
+### 🔧 开发相关
+
+```bash
+make dev          # 开发模式运行
+make test         # 运行测试
+make lint         # 代码检查
+make fmt          # 格式化代码
+```
+
+### ⚙️ 配置相关
+
+```bash
+make config       # 创建配置文件
+make env          # 创建环境变量文件
+make validate     # 验证配置
+```
+
+### 📊 监控相关
+
+```bash
+make health       # 健康检查
+make stats        # 查看统计信息
+```
+
+### 🚀 快速开始示例
+
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd regular_input
+
+# 2. 创建配置文件
+make config
+make env
+
+# 3. 编辑配置文件
+vim config.json
+vim .env
+
+# 4. 开发模式运行
+make dev
+
+# 或者 Docker 部署
+make build-docker
+make run
+make logs
+```
+
 ## 技术栈
 
 - **语言**: Go 1.21+
@@ -197,6 +285,7 @@ AHR999 是一个用于判断比特币投资时机的指标：
 - **交易所 API**: go-binance
 - **消息推送**: 多平台支持
 - **容器化**: Docker
+- **构建工具**: Make
 
 ## 许可证
 

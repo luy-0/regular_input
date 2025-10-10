@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // Config 总配置结构
@@ -100,9 +102,24 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("任务名称不能为空")
 	}
 
+	// 验证任务名称长度和字符
+	if len(c.TaskConfig.Name) > 50 {
+		return fmt.Errorf("任务名称长度不能超过50个字符")
+	}
+
+	// 验证任务名称只包含安全字符
+	if !isValidTaskName(c.TaskConfig.Name) {
+		return fmt.Errorf("任务名称包含无效字符，只允许字母、数字、下划线和连字符")
+	}
+
 	// 验证 cron 表达式
 	if c.TaskConfig.Schedule == "" {
 		return fmt.Errorf("定时表达式不能为空")
+	}
+
+	// 验证 cron 表达式格式
+	if !isValidCronExpression(c.TaskConfig.Schedule) {
+		return fmt.Errorf("定时表达式格式无效")
 	}
 
 	// 验证基础金额
@@ -110,12 +127,158 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("基础金额必须大于 0")
 	}
 
+	// 验证基础金额范围
+	if c.ParamsConfig.BaseAmount > 1000000 {
+		return fmt.Errorf("基础金额不能超过 1,000,000 USDT")
+	}
+
+	// 验证 AHR999 倍数表
+	if c.ParamsConfig.UseAhr999 {
+		if err := validateAhr999Table(c.ParamsConfig.Ahr999TimerTable); err != nil {
+			return fmt.Errorf("AHR999 倍数表验证失败: %w", err)
+		}
+	}
+
 	// 验证推送方式
 	if c.MessageConfig.Enabled && len(c.MessageConfig.PushMethod) == 0 {
 		return fmt.Errorf("启用消息推送时必须指定至少一个推送方式")
 	}
 
+	// 验证推送方式的有效性
+	for _, method := range c.MessageConfig.PushMethod {
+		if !isValidPushMethod(method) {
+			return fmt.Errorf("无效的推送方式: %s", method)
+		}
+	}
+
 	return nil
+}
+
+// isValidTaskName 验证任务名称是否有效
+func isValidTaskName(name string) bool {
+	if len(name) == 0 || len(name) > 50 {
+		return false
+	}
+
+	for _, char := range name {
+		if !((char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') ||
+			char == '_' || char == '-') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isValidCronExpression 验证 cron 表达式是否有效
+func isValidCronExpression(schedule string) bool {
+	// 简单的 cron 表达式验证
+	// 支持格式: 秒 分 时 日 月 周
+	parts := strings.Fields(schedule)
+	if len(parts) != 6 {
+		return false
+	}
+
+	// 检查每个部分是否包含有效字符
+	for _, part := range parts {
+		if !isValidCronField(part) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isValidCronField 验证 cron 字段是否有效
+func isValidCronField(field string) bool {
+	if field == "" {
+		return false
+	}
+
+	// 允许的字符: 数字、*、/、-、,
+	for _, char := range field {
+		if !((char >= '0' && char <= '9') ||
+			char == '*' || char == '/' ||
+			char == '-' || char == ',') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// validateAhr999Table 验证 AHR999 倍数表
+func validateAhr999Table(table map[string]float64) error {
+	if len(table) == 0 {
+		return fmt.Errorf("AHR999 倍数表不能为空")
+	}
+
+	for rangeStr, multiplier := range table {
+		// 验证区间格式
+		if !isValidAhr999Range(rangeStr) {
+			return fmt.Errorf("无效的 AHR999 区间格式: %s", rangeStr)
+		}
+
+		// 验证倍数范围
+		if multiplier < 0 {
+			return fmt.Errorf("AHR999 倍数不能为负数: %s = %f", rangeStr, multiplier)
+		}
+
+		if multiplier > 100 {
+			return fmt.Errorf("AHR999 倍数不能超过 100: %s = %f", rangeStr, multiplier)
+		}
+	}
+
+	return nil
+}
+
+// isValidAhr999Range 验证 AHR999 区间格式
+func isValidAhr999Range(rangeStr string) bool {
+	rangeStr = strings.TrimSpace(rangeStr)
+
+	// 检查 "<0.45" 格式
+	if strings.HasPrefix(rangeStr, "<") {
+		valueStr := strings.TrimPrefix(rangeStr, "<")
+		_, err := strconv.ParseFloat(valueStr, 64)
+		return err == nil
+	}
+
+	// 检查 ">1.8" 格式
+	if strings.HasPrefix(rangeStr, ">") {
+		valueStr := strings.TrimPrefix(rangeStr, ">")
+		_, err := strconv.ParseFloat(valueStr, 64)
+		return err == nil
+	}
+
+	// 检查 "0.4-0.6" 格式
+	if strings.Contains(rangeStr, "-") {
+		parts := strings.Split(rangeStr, "-")
+		if len(parts) != 2 {
+			return false
+		}
+
+		_, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+		_, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+		return err1 == nil && err2 == nil
+	}
+
+	// 检查单个值 "1.0" 格式
+	_, err := strconv.ParseFloat(rangeStr, 64)
+	return err == nil
+}
+
+// isValidPushMethod 验证推送方式是否有效
+func isValidPushMethod(method string) bool {
+	validMethods := map[string]bool{
+		"telegram": true,
+		"lark":     true,
+		"feishu":   true,
+		"wechat":   true,
+	}
+
+	return validMethods[strings.ToLower(method)]
 }
 
 // SaveConfig 保存配置到文件
