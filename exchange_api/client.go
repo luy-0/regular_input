@@ -23,20 +23,34 @@ type Client struct {
 
 // NewClient 创建新的CCXT客户端
 func NewClient(apiKey, secretKey, proxyUrl string) *Client {
+	// 只有在明确设置了代理时才使用代理
 	if proxyUrl == "" {
 		proxyUrl = os.Getenv("HTTPS_PROXY")
-		if proxyUrl == "" {
-			proxyUrl = "http://127.0.0.1:7890" // 默认回退
-		}
 	}
+
 	if apiKey == "" || secretKey == "" {
 		log.Println("apiKey or secretKey is empty")
 	}
-	cli := &Client{
-		spotClient: binance.NewProxiedClient(apiKey, secretKey, proxyUrl),
-		apiKey:     apiKey,
-		secretKey:  secretKey,
-		proxyUrl:   proxyUrl,
+
+	var cli *Client
+	if proxyUrl != "" {
+		// 使用代理客户端
+		log.Printf("使用代理连接: %s", proxyUrl)
+		cli = &Client{
+			spotClient: binance.NewProxiedClient(apiKey, secretKey, proxyUrl),
+			apiKey:     apiKey,
+			secretKey:  secretKey,
+			proxyUrl:   proxyUrl,
+		}
+	} else {
+		// 使用直连客户端
+		log.Println("使用直连模式（无代理）")
+		cli = &Client{
+			spotClient: binance.NewClient(apiKey, secretKey),
+			apiKey:     apiKey,
+			secretKey:  secretKey,
+			proxyUrl:   "",
+		}
 	}
 	btcPrice, err := cli.GetBTCPrice(context.Background())
 	if err != nil {
@@ -49,16 +63,29 @@ func NewClient(apiKey, secretKey, proxyUrl string) *Client {
 
 // NewClientWithoutAuth 创建无需认证的客户端（仅用于公开接口）
 func NewClientWithoutAuth(proxyUrl string) *Client {
+	// 只有在明确设置了代理时才使用代理
 	if proxyUrl == "" {
 		proxyUrl = os.Getenv("HTTPS_PROXY")
-		if proxyUrl == "" {
-			proxyUrl = "http://127.0.0.1:7890"
-		}
 	}
-	return &Client{
-		spotClient: binance.NewProxiedClient("", "", proxyUrl),
-		apiKey:     "",
-		secretKey:  "",
+
+	if proxyUrl != "" {
+		// 使用代理客户端
+		log.Printf("使用代理连接（无认证）: %s", proxyUrl)
+		return &Client{
+			spotClient: binance.NewProxiedClient("", "", proxyUrl),
+			apiKey:     "",
+			secretKey:  "",
+			proxyUrl:   proxyUrl,
+		}
+	} else {
+		// 使用直连客户端
+		log.Println("使用直连模式（无认证，无代理）")
+		return &Client{
+			spotClient: binance.NewClient("", ""),
+			apiKey:     "",
+			secretKey:  "",
+			proxyUrl:   "",
+		}
 	}
 }
 

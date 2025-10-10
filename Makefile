@@ -195,8 +195,8 @@ env:
 		echo "FEISHU_TOKEN=your_feishu_token" >> .env; \
 		echo "WEIXIN_FT_TOKEN=your_wechat_token" >> .env; \
 		echo "" >> .env; \
-		echo "# 代理配置（可选）" >> .env; \
-		echo "HTTPS_PROXY=http://proxy:port" >> .env; \
+		echo "# 代理配置（可选，如不需要代理请留空）" >> .env; \
+		echo "# HTTPS_PROXY=http://proxy:port" >> .env; \
 		echo "" >> .env; \
 		echo "# 调试模式" >> .env; \
 		echo "DEBUG=true" >> .env; \

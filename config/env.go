@@ -46,9 +46,9 @@ func LoadEnvConfig() *EnvConfig {
 		FeishuToken:      os.Getenv("FEISHU_TOKEN"),
 		WeixinFTToken:    os.Getenv("WEIXIN_FT_TOKEN"),
 
-		// 网络代理
-		HTTPSProxy: getEnvOrDefault("HTTPS_PROXY", "http://127.0.0.1:7890"),
-		HTTPProxy:  getEnvOrDefault("HTTP_PROXY", "http://127.0.0.1:7890"),
+		// 网络代理（仅在设置了环境变量时使用）
+		HTTPSProxy: os.Getenv("HTTPS_PROXY"),
+		HTTPProxy:  os.Getenv("HTTP_PROXY"),
 
 		// 其他配置
 		LogLevel: getEnvOrDefault("LOG_LEVEL", "info"),
@@ -255,17 +255,17 @@ func (env *EnvConfig) PrintEnvStatus(requiredPushMethods []string) {
 
 	// 网络代理
 	fmt.Println("\n【网络代理】")
-	status = "❌ 未设置"
-	if env.HTTPSProxy != "" && env.HTTPSProxy != "http://127.0.0.1:7890" {
-		status = "✅ 已设置"
+	if env.HTTPSProxy != "" {
+		fmt.Printf("  HTTPS_PROXY: ✅ 已设置 (%s)\n", (env.HTTPSProxy))
+	} else {
+		fmt.Println("  HTTPS_PROXY: ❌ 未设置（将使用直连模式）")
 	}
-	fmt.Printf("  HTTPS_PROXY: %s (%s)\n", status, env.HTTPSProxy)
 
-	status = "❌ 未设置"
-	if env.HTTPProxy != "" && env.HTTPProxy != "http://127.0.0.1:7890" {
-		status = "✅ 已设置"
+	if env.HTTPProxy != "" {
+		fmt.Printf("  HTTP_PROXY: ✅ 已设置 (%s)\n", (env.HTTPProxy))
+	} else {
+		fmt.Println("  HTTP_PROXY: ❌ 未设置（将使用直连模式）")
 	}
-	fmt.Printf("  HTTP_PROXY: %s (%s)\n", status, env.HTTPProxy)
 
 	// 其他配置
 	fmt.Println("\n【其他配置】")
