@@ -1,0 +1,32 @@
+{
+    "task_config": {
+      "name": "regular-buy",
+      "schedule": "0 0 0 * * *",
+      "log_level": "info"
+    },
+    "params_config": {
+      "debug": false,
+      "base_amount": 100,
+      "use_ahr999": true,
+      "ahr999_timer_table": {
+        "<0.45": 8,
+        "0.45-0.6": 4,
+        "0.6-0.8": 2,
+        "0.8-0.9": 1,
+        "0.9-1.1": 0.5,
+        "1.1-1.2": 0.25,
+        "1.2-1.4": 0.125,
+        "1.4-1.6": 0,
+        "1.6-1.8": 0,
+        ">1.8": 0
+      }
+    },
+    "message_config": {
+      "enabled": true,
+      "push_method": [
+          "telegram",
+          "lark",
+          "wechat"
+      ]
+    }
+  }

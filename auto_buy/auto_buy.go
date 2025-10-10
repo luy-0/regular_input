@@ -50,6 +50,7 @@ func NewAutoBuyTask(config *Config, apiKey, secretKey, proxyUrl string) *AutoBuy
 
 	// 初始化消息推送器
 	task.initPushers()
+	task.pushFormattedMessage(helper.NewFormattedMessage(helper.MessageTypeInfo, "定投任务", "定投任务启动成功"))
 
 	return task
 }

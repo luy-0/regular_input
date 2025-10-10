@@ -87,14 +87,19 @@ clean:
 .PHONY: run
 run: build-docker
 	@echo "🚀 运行 Docker 容器..."
+	@if [ ! -f .env ]; then \
+		echo "⚠️  .env 文件不存在，正在创建..."; \
+		make env; \
+	fi
 	@if [ ! -f config.json ]; then \
-		echo "⚠️  配置文件不存在，正在创建..."; \
+		echo "⚠️  config.json 文件不存在，正在创建..."; \
 		cp config.json.example config.json; \
 	fi
 	docker run -d \
 		--name $(CONTAINER_NAME) \
 		--restart unless-stopped \
-		-v $(PWD)/config.json:/app/config.json:ro \
+		-v "$$(pwd)/config.json:/app/config.json:ro" \
+		-v "$$(pwd)/.env:/app/.env:ro" \
 		-e TZ=Asia/Shanghai \
 		$(IMAGE_NAME):$(TAG)
 	@echo "✅ 容器已启动: $(CONTAINER_NAME)"
@@ -271,4 +276,68 @@ version:
 	@echo "  版本: $(VERSION)"
 	@echo "  构建时间: $(BUILD_TIME)"
 	@echo "  Git 提交: $(GIT_COMMIT)"
-	@echo "  Go 版本: $(GO_VERSION)" 
+	@echo "  Go 版本: $(GO_VERSION)"
+
+# 修复配置文件问题
+.PHONY: fix-config
+fix-config:
+	@echo "🔧 修复配置文件问题..."
+	@if [ -d config.json ]; then \
+		echo "❌ 发现 config.json 是目录，正在删除..."; \
+		rm -rf config.json; \
+	fi
+	@if [ -d .env ]; then \
+		echo "❌ 发现 .env 是目录，正在删除..."; \
+		rm -rf .env; \
+	fi
+	@echo "📝 重新创建配置文件..."
+	@make config
+	@make env
+	@echo "✅ 配置文件修复完成"
+
+# 检查配置文件状态
+.PHONY: check-config
+check-config:
+	@echo "🔍 检查配置文件状态..."
+	@echo "config.json:"
+	@if [ -f config.json ]; then \
+		echo "  ✅ 文件存在"; \
+		ls -la config.json; \
+	elif [ -d config.json ]; then \
+		echo "  ❌ 是目录，需要修复"; \
+		ls -la config.json; \
+	else \
+		echo "  ⚠️  文件不存在"; \
+	fi
+	@echo ""
+	@echo ".env:"
+	@if [ -f .env ]; then \
+		echo "  ✅ 文件存在"; \
+		ls -la .env; \
+	elif [ -d .env ]; then \
+		echo "  ❌ 是目录，需要修复"; \
+		ls -la .env; \
+	else \
+		echo "  ⚠️  文件不存在"; \
+	fi
+
+# 调试容器内文件状态
+.PHONY: debug-container
+debug-container:
+	@echo "🐛 调试容器内文件状态..."
+	@if docker ps --filter name=$(CONTAINER_NAME) --filter status=running | grep -q $(CONTAINER_NAME); then \
+		echo "容器运行中，检查文件状态..."; \
+		echo "工作目录:"; \
+		docker exec $(CONTAINER_NAME) pwd; \
+		echo ""; \
+		echo "文件列表:"; \
+		docker exec $(CONTAINER_NAME) ls -la /app/; \
+		echo ""; \
+		echo "config.json 内容:"; \
+		docker exec $(CONTAINER_NAME) cat /app/config.json 2>/dev/null || echo "无法读取 config.json"; \
+		echo ""; \
+		echo ".env 内容:"; \
+		docker exec $(CONTAINER_NAME) cat /app/.env 2>/dev/null || echo "无法读取 .env"; \
+	else \
+		echo "❌ 容器未运行，请先运行 make run"; \
+	fi 
