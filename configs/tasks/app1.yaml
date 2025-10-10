@@ -1,4 +1,0 @@
-schedule: "*/10 * * * * *"  # 每10秒执行一次
-params:
-  timeout: 2
-  message: "Hello from App1 Task" 

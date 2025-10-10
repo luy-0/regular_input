@@ -1,21 +1,23 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"task_scheduler/helper"
 	"task_scheduler/internal/config"
 	"task_scheduler/internal/core"
 	"task_scheduler/pkg/ccxt"
-	"task_scheduler/pkg/pushAPI"
 	autobuy "task_scheduler/plugins/auto-buy"
 )
 
 func main() {
 	// main_autoBuy()
 	// main_ccxt()
-	main_main()
+	// main_main()
+	main_pushAPI()
 }
 
 func main_ccxt() {
@@ -28,7 +30,9 @@ func main_autoBuy() {
 }
 
 func main_pushAPI() {
-	pushAPI.ExampleUsage()
+	// pushAPI.ExampleUsage()
+
+	helper.TestAllPushers()
 }
 
 func main_main() {
@@ -74,9 +78,9 @@ func main_main() {
 	taskManager.Start()
 
 	// 测试代码
-	// taskMap := taskManager.GetTasks()
-	// log.Println("taskMap: ", taskMap)
-	// taskMap["auto-buy"].Task.Execute(context.Background())
+	taskMap := taskManager.GetTasks()
+	log.Println("taskMap: ", taskMap)
+	taskMap["auto-buy"].Task.Execute(context.Background())
 
 	// 等待中断信号
 	sigChan := make(chan os.Signal, 1)
