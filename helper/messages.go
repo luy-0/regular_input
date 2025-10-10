@@ -90,3 +90,9 @@ type MessagePusher interface {
 	Push(message string) error
 	TestPush() bool
 }
+
+// FormattedMessagePusher 格式化消息推送器接口
+type FormattedMessagePusher interface {
+	MessagePusher
+	PushFormatted(msg *FormattedMessage) error
+}

@@ -26,7 +26,7 @@ const (
 func NewTelegramBot(token, chatID string) *TelegramBot {
 	apiURL := fmt.Sprintf("%s%s", BaseURL, token)
 	client := &http.Client{
-		Timeout: 30 * time.Second, // 增加超时时间到 30 秒
+		Timeout: 10 * time.Second, // 增加超时时间到 30 秒
 	}
 	return &TelegramBot{
 		Token:   token,
@@ -51,6 +51,13 @@ func (bot *TelegramBot) SendText(title, content string) (map[string]interface{},
 // Push 实现 MessagePusher 接口
 func (bot *TelegramBot) Push(message string) error {
 	_, err := bot.SendText("定投通知", message)
+	return err
+}
+
+// PushFormatted 推送格式化消息
+func (bot *TelegramBot) PushFormatted(msg *FormattedMessage) error {
+	formattedMessage := msg.ToTelegramFormat()
+	_, err := bot.SendText(msg.Title, formattedMessage)
 	return err
 }
 

@@ -1,169 +1,202 @@
-# 定时任务调度器
+# BTC 定投机器人
 
-这是一个可扩展的、基于配置的定时任务系统，使用 Go 语言开发。
+基于 AHR999 指标的智能 BTC 定投系统，支持多种消息推送方式。
 
 ## 功能特性
 
-- 🕐 基于 cron 表达式的定时调度
-- 🔌 插件化架构，支持动态扩展
-- ⚙️ 基于 YAML 的配置管理
-- 🛡️ 任务执行隔离和错误处理
-- 📊 任务执行状态监控
-- 🚀 优雅启动和停止
+- 🤖 基于 AHR999 指标的智能定投策略
+- ⏰ 支持 cron 表达式的定时调度
+- 📱 多平台消息推送（Telegram、飞书、微信、Lark）
+- 🔧 灵活的配置管理
+- 🛡️ 调试模式支持
+- 🚀 Docker 容器化部署
 
 ## 项目结构
 
 ```
-task_scheduler/
-├── configs/               # 配置文件目录
-│   ├── config.yaml        # 主配置文件
-│   └── tasks/             # 各任务配置
-│       ├── app1.yaml
-│       └── app2.yaml
-├── internal/              # 内部模块
-│   ├── core/              # 核心调度逻辑
-│   │   ├── scheduler.go
-│   │   └── task.go
-│   ├── plugins/           # 插件接口定义
-│   │   └── plugin.go
-│   └── config/            # 配置加载与验证
-│       └── loader.go
-├── plugins/               # 插件实现
-│   ├── app1/              # 任务1插件
-│   │   └── plugin.go
-│   └── app2/              # 任务2插件
-│       └── plugin.go
-├── main.go                # 入口文件
-├── go.mod                 # 依赖管理
+regular_input/
+├── ahr999/                # AHR999 指标计算
+│   ├── ahr999.go
+│   └── calculate_amount.go
+├── auto_buy/              # 定投任务核心逻辑
+│   └── auto_buy.go
+├── config/                # 配置管理
+│   ├── config.go
+│   └── env.go
+├── exchange_api/          # 交易所 API 客户端
+│   ├── client.go
+│   └── example.go
+├── helper/                # 消息推送助手
+│   ├── lark_bot.go
+│   ├── messages.go
+│   ├── telegram_bot.go
+│   ├── test_pushers.go
+│   └── wechat_bot.go
+├── scheduler/             # 定时任务调度器
+│   └── scheduler.go
+├── main.go                # 程序入口
+├── config.json.example    # 配置文件模板
+├── Dockerfile             # Docker 构建文件
 └── README.md              # 项目说明
 ```
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 环境准备
+
+确保已安装 Go 1.21+ 和 Docker（可选）。
+
+### 2. 配置设置
+
+复制配置文件模板：
 
 ```bash
-go mod tidy
+cp config.json.example config.json
 ```
 
-### 2. 运行程序
+编辑 `config.json` 文件：
+
+```json
+{
+  "task_config": {
+    "name": "regular-buy",
+    "schedule": "0 0 7 * * *",
+    "log_level": "info"
+  },
+  "params_config": {
+    "debug": true,
+    "base_amount": 100,
+    "use_ahr999": true,
+    "ahr999_timer_table": {
+      "<0.45": 8,
+      "0.45-0.6": 4,
+      "0.6-0.8": 2,
+      "0.8-0.9": 1,
+      "0.9-1.1": 0.5,
+      "1.1-1.2": 0.25,
+      "1.2-1.4": 0.125,
+      "1.4-1.6": 0,
+      "1.6-1.8": 0,
+      ">1.8": 0
+    }
+  },
+  "message_config": {
+    "enabled": true,
+    "push_method": ["telegram", "lark", "feishu", "wechat"]
+  }
+}
+```
+
+### 3. 环境变量配置
+
+创建 `.env` 文件并配置必要的环境变量：
 
 ```bash
+# 币安 API 配置（生产环境必需）
+BINANCE_API_KEY=your_api_key
+BINANCE_SECRET_KEY=your_secret_key
+
+# 消息推送配置（可选）
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+LARK_TOKEN=your_lark_token
+FEISHU_TOKEN=your_feishu_token
+WEIXIN_FT_TOKEN=your_wechat_token
+
+# 代理配置（可选）
+HTTPS_PROXY=http://proxy:port
+
+# 调试模式
+DEBUG=true
+```
+
+### 4. 运行程序
+
+#### 方式一：直接运行
+
+```bash
+# 安装依赖
+go mod tidy
+
+# 运行程序
 go run main.go
 ```
 
-### 3. 查看日志
+#### 方式二：Docker 运行
 
-程序启动后会显示任务加载和执行日志：
+```bash
+# 构建镜像
+docker build -t regular-input .
 
-```
-2024/01/01 10:00:00 启动定时任务调度器...
-2024/01/01 10:00:00 插件已注册: app1
-2024/01/01 10:00:00 插件已注册: app2
-2024/01/01 10:00:00 任务配置已加载: app1, 调度: */30 * * * * *
-2024/01/01 10:00:00 任务配置已加载: app2, 调度: 0 */1 * * * *
-2024/01/01 10:00:00 任务已添加: app1, 调度: */30 * * * * *
-2024/01/01 10:00:00 任务已添加: app2, 调度: 0 */1 * * * *
-2024/01/01 10:00:00 任务管理器已启动
-2024/01/01 10:00:00 定时任务调度器已启动，按 Ctrl+C 停止...
+# 运行容器
+docker run -d \
+  --name btc-dca-bot \
+  -v $(pwd)/config.json:/app/config.json \
+  -e BINANCE_API_KEY=your_api_key \
+  -e BINANCE_SECRET_KEY=your_secret_key \
+  -e TELEGRAM_BOT_TOKEN=your_bot_token \
+  -e TELEGRAM_CHAT_ID=your_chat_id \
+  regular-input
 ```
 
 ## 配置说明
 
-### 主配置文件 (configs/config.yaml)
+### 任务配置 (task_config)
 
-```yaml
-log_level: "info"
-plugins_dir: "./plugins"
-tasks:
-  - name: "app1"
-    config_file: "configs/tasks/app1.yaml"
-    enabled: true
-  - name: "app2"
-    config_file: "configs/tasks/app2.yaml"
-    enabled: true
-```
+- `name`: 任务名称
+- `schedule`: cron 定时表达式（支持秒级）
+- `log_level`: 日志级别
 
-### 任务配置文件 (configs/tasks/app1.yaml)
+### 参数配置 (params_config)
 
-```yaml
-schedule: "*/30 * * * * *"  # 每30秒执行一次
-params:
-  timeout: 30
-  message: "Hello from App1 Task"
-```
+- `debug`: 调试模式（true=模拟交易，false=真实交易）
+- `base_amount`: 基础定投金额（USDT）
+- `use_ahr999`: 是否启用 AHR999 指标
+- `ahr999_timer_table`: AHR999 倍数表
 
-## 开发插件
+### 消息配置 (message_config)
 
-### 1. 实现插件接口
+- `enabled`: 是否启用消息推送
+- `push_method`: 推送方式列表
 
-```go
-package myplugin
+## AHR999 定投策略
 
-import (
-    "context"
-    "task_scheduler/internal/plugins"
-)
+AHR999 是一个用于判断比特币投资时机的指标：
 
-type MyPlugin struct{}
+- **< 0.45**: 极度低估，8倍定投
+- **0.45-0.6**: 低估，4倍定投
+- **0.6-0.8**: 较低估，2倍定投
+- **0.8-0.9**: 略低估，1倍定投
+- **0.9-1.1**: 正常，0.5倍定投
+- **1.1-1.2**: 略高估，0.25倍定投
+- **1.2-1.4**: 高估，0.125倍定投
+- **1.4-1.6**: 较高估，暂停定投
+- **1.6-1.8**: 高估，暂停定投
+- **> 1.8**: 极度高估，暂停定投
 
-func (p *MyPlugin) Name() string {
-    return "myplugin"
-}
+## 消息推送
 
-func (p *MyPlugin) CreateTask(config map[string]interface{}) (plugins.Task, error) {
-    return &MyTask{config: config}, nil
-}
+支持多种消息推送方式：
 
-func (p *MyPlugin) GetDefaultConfig() map[string]interface{} {
-    return map[string]interface{}{
-        "param1": "default_value",
-    }
-}
+- **Telegram**: 需要 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
+- **飞书**: 需要 `FEISHU_TOKEN`
+- **Lark**: 需要 `LARK_TOKEN`
+- **微信**: 需要 `WEIXIN_FT_TOKEN`
 
-type MyTask struct {
-    config map[string]interface{}
-}
+## 安全注意事项
 
-func (t *MyTask) Name() string {
-    return "myplugin"
-}
-
-func (t *MyTask) Execute(ctx context.Context) error {
-    // 实现任务逻辑
-    return nil
-}
-
-func (t *MyTask) ValidateConfig(config map[string]interface{}) error {
-    // 验证配置
-    return nil
-}
-```
-
-### 2. 注册插件
-
-在 `main.go` 中添加插件注册：
-
-```go
-taskManager.RegisterPlugin(myplugin.NewPlugin())
-```
-
-### 3. 添加配置
-
-在 `configs/config.yaml` 中添加任务配置：
-
-```yaml
-tasks:
-  - name: "myplugin"
-    config_file: "configs/tasks/myplugin.yaml"
-    enabled: true
-```
+1. **API 密钥安全**: 请妥善保管币安 API 密钥，建议设置 IP 白名单
+2. **权限控制**: API 密钥只需要现货交易权限，不要开启提币权限
+3. **测试模式**: 建议先在调试模式下测试，确认无误后再切换到生产模式
+4. **资金安全**: 建议使用小额资金进行测试
 
 ## 技术栈
 
-- **调度引擎**: robfig/cron/v3
-- **配置管理**: spf13/viper
 - **语言**: Go 1.21+
+- **调度引擎**: robfig/cron/v3
+- **交易所 API**: go-binance
+- **消息推送**: 多平台支持
+- **容器化**: Docker
 
 ## 许可证
 

@@ -61,6 +61,13 @@ func (bot *LarkBot) Push(message string) error {
 	return err
 }
 
+// PushFormatted 推送格式化消息
+func (bot *LarkBot) PushFormatted(msg *FormattedMessage) error {
+	formattedMessage := msg.ToLarkFormat()
+	_, err := bot.SendText(msg.Title, formattedMessage)
+	return err
+}
+
 // TestPush performs a health check by sending a test message
 func (bot *LarkBot) TestPush() bool {
 	// 发送测试消息进行健康检查

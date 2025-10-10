@@ -116,7 +116,8 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		if err != nil {
 			errMsg := fmt.Sprintf("获取 AHR999 数据失败: %v", err)
 			log.Printf("[定投任务] %s", errMsg)
-			t.pushMessage(fmt.Sprintf("❌ 定投任务失败\n%s", errMsg))
+			errorMsg := helper.NewFormattedMessage(helper.MessageTypeError, "定投任务失败", errMsg)
+			t.pushFormattedMessage(errorMsg)
 			return fmt.Errorf(errMsg)
 		}
 		log.Printf("[定投任务] 当前 BTC 价格: %.2f, AHR999 值: %.4f", btcPrice, ahr999Value)
@@ -131,7 +132,8 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		if err != nil {
 			errMsg := fmt.Sprintf("计算定投金额失败: %v", err)
 			log.Printf("[定投任务] %s", errMsg)
-			t.pushMessage(fmt.Sprintf("❌ 定投任务失败\n%s", errMsg))
+			errorMsg := helper.NewFormattedMessage(helper.MessageTypeError, "定投任务失败", errMsg)
+			t.pushFormattedMessage(errorMsg)
 			return fmt.Errorf(errMsg)
 		}
 		log.Printf("[定投任务] AHR999 区间: %s, 倍数: %.2f, 定投金额: %.2f USDT",
@@ -143,7 +145,8 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		if err != nil {
 			errMsg := fmt.Sprintf("获取 BTC 价格失败: %v", err)
 			log.Printf("[定投任务] %s", errMsg)
-			t.pushMessage(fmt.Sprintf("❌ 定投任务失败\n%s", errMsg))
+			errorMsg := helper.NewFormattedMessage(helper.MessageTypeError, "定投任务失败", errMsg)
+			t.pushFormattedMessage(errorMsg)
 			return fmt.Errorf(errMsg)
 		}
 		log.Printf("[定投任务] 当前 BTC 价格: %.2f, 定投金额: %.2f USDT", btcPrice, amount)
@@ -152,9 +155,9 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 	// 3. 执行买入操作
 	if t.config.Debug {
 		// 调试模式：只记录日志，不实际买入
-		message := t.formatMessage(true, btcPrice, ahr999Value, amount, "", nil)
-		log.Printf("[定投任务] 调试模式：%s", message)
-		t.pushMessage(message)
+		formattedMsg := helper.FormatDCAReport(true, btcPrice, ahr999Value, amount, "", nil)
+		log.Printf("[定投任务] 调试模式：%s", formattedMsg.ToPlainText())
+		t.pushFormattedMessage(formattedMsg)
 		return nil
 	}
 
@@ -168,8 +171,8 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 	log.Printf("[定投任务] 买入结果: %s", orderResult)
 
 	// 4. 发送通知
-	message := t.formatMessage(false, btcPrice, ahr999Value, amount, orderResult, nil)
-	t.pushMessage(message)
+	formattedMsg := helper.FormatDCAReport(false, btcPrice, ahr999Value, amount, orderResult, nil)
+	t.pushFormattedMessage(formattedMsg)
 
 	return nil
 }
@@ -217,6 +220,29 @@ func (t *AutoBuyTask) pushMessage(message string) {
 
 	for _, pusher := range t.pushers {
 		if err := pusher.Push(message); err != nil {
+			log.Printf("[定投任务] 消息推送失败: %v", err)
+		}
+	}
+}
+
+// pushFormattedMessage 推送格式化消息
+func (t *AutoBuyTask) pushFormattedMessage(msg *helper.FormattedMessage) {
+	if len(t.pushers) == 0 {
+		return
+	}
+
+	for _, pusher := range t.pushers {
+		var err error
+
+		// 尝试使用格式化推送
+		if formattedPusher, ok := pusher.(helper.FormattedMessagePusher); ok {
+			err = formattedPusher.PushFormatted(msg)
+		} else {
+			// 回退到普通推送
+			err = pusher.Push(msg.ToPlainText())
+		}
+
+		if err != nil {
 			log.Printf("[定投任务] 消息推送失败: %v", err)
 		}
 	}

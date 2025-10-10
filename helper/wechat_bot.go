@@ -35,6 +35,22 @@ func (w *WeChatPusher) Push(message string) error {
 	return nil
 }
 
+// PushFormatted 推送格式化消息
+func (w *WeChatPusher) PushFormatted(msg *FormattedMessage) error {
+	formattedMessage := msg.ToWeChatFormat()
+	resp, err := serverchan.ScSend(w.sendKey, msg.Title, formattedMessage, nil)
+	if err != nil {
+		return fmt.Errorf("微信推送失败: %w", err)
+	}
+
+	// 检查响应
+	if resp != nil && resp.Code != 0 {
+		return fmt.Errorf("微信推送失败: %s", resp.Message)
+	}
+
+	return nil
+}
+
 // PushMessage 推送消息（旧接口，保持兼容性）
 func (w *WeChatPusher) PushMessage(msg Message) error {
 	// 构建消息内容
