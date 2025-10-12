@@ -52,12 +52,7 @@ func NewClient(apiKey, secretKey, proxyUrl string) *Client {
 			proxyUrl:   "",
 		}
 	}
-	btcPrice, err := cli.GetBTCPrice(context.Background())
-	if err != nil {
-		log.Println("CCXT Client 初始化结果: \n BTC价格获取失败", err)
-	} else {
-		log.Println("CCXT Client 初始化结果: \n BTC价格", btcPrice)
-	}
+	cli.Ping(context.Background())
 	return cli
 }
 
@@ -67,26 +62,20 @@ func NewClientWithoutAuth(proxyUrl string) *Client {
 	if proxyUrl == "" {
 		proxyUrl = os.Getenv("HTTPS_PROXY")
 	}
-
+	ret := &Client{}
 	if proxyUrl != "" {
 		// 使用代理客户端
 		log.Printf("使用代理连接（无认证）: %s", proxyUrl)
-		return &Client{
-			spotClient: binance.NewProxiedClient("", "", proxyUrl),
-			apiKey:     "",
-			secretKey:  "",
-			proxyUrl:   proxyUrl,
-		}
+		ret.spotClient = binance.NewProxiedClient("", "", proxyUrl)
+		ret.proxyUrl = proxyUrl
 	} else {
 		// 使用直连客户端
 		log.Println("使用直连模式（无认证，无代理）")
-		return &Client{
-			spotClient: binance.NewClient("", ""),
-			apiKey:     "",
-			secretKey:  "",
-			proxyUrl:   "",
-		}
+		ret.spotClient = binance.NewClient("", "")
+		ret.proxyUrl = ""
 	}
+	ret.Ping(context.Background())
+	return ret
 }
 
 // Ping 测试交易所连通性
@@ -96,6 +85,11 @@ func (c *Client) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("ping交易所失败: %w", err)
 	}
+	prices, err := c.GetBTCPrice(ctx)
+	if err != nil {
+		return fmt.Errorf("获取BTC价格失败: %w", err)
+	}
+	log.Println("🎉交易所连通成功，当前BTC价格:", prices)
 	return nil
 }
 

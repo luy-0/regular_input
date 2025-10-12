@@ -91,25 +91,25 @@ func FormatDCAReport(isDebug bool, btcPrice, ahr999Value, amount float64, orderR
 	}
 
 	// 构建内容
-	content.WriteString(fmt.Sprintf("💰 **BTC 价格**: $%.2f\n", btcPrice))
+	content.WriteString(fmt.Sprintf("💰 BTC 价格: $%.2f\n", btcPrice))
 
 	if ahr999Value > 0 {
-		content.WriteString(fmt.Sprintf("📊 **AHR999 值**: %.4f\n", ahr999Value))
+		content.WriteString(fmt.Sprintf("📊 AHR999 值: %.4f\n", ahr999Value))
 
 		// 添加AHR999区间说明
 		interval := getAHR999Interval(ahr999Value)
-		content.WriteString(fmt.Sprintf("📈 **投资区间**: %s\n", interval))
+		content.WriteString(fmt.Sprintf("📈 投资区间: %s\n", interval))
 	}
 
-	content.WriteString(fmt.Sprintf("💵 **定投金额**: %.2f USDT\n", amount))
+	content.WriteString(fmt.Sprintf("💵 定投金额: %.2f USDT\n", amount))
 
 	if !isDebug && orderResult != "" {
-		content.WriteString("\n📋 **订单详情**:\n")
+		content.WriteString("\n📋 订单详情:\n")
 		content.WriteString(formatOrderResult(orderResult))
 	}
 
 	if err != nil {
-		content.WriteString(fmt.Sprintf("\n⚠️ **错误信息**: %v", err))
+		content.WriteString(fmt.Sprintf("\n⚠️ 错误信息: %v", err))
 	}
 
 	msg := NewFormattedMessage(msgType, title, content.String())
@@ -164,12 +164,12 @@ func formatOrderResult(result string) string {
 func (m *FormattedMessage) ToTelegramFormat() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("%s **%s**\n", m.Emoji, m.Title))
+	sb.WriteString(fmt.Sprintf("%s %s\n", m.Emoji, m.Title))
 	sb.WriteString(fmt.Sprintf("🕐 %s\n\n", m.Timestamp.Format("2006-01-02 15:04:05")))
 	sb.WriteString(m.Content)
 
 	if len(m.Metadata) > 0 {
-		sb.WriteString("\n\n📊 **统计信息**:\n")
+		sb.WriteString("\n\n📊 统计信息:\n")
 		for key, value := range m.Metadata {
 			sb.WriteString(fmt.Sprintf("• %s: %v\n", key, value))
 		}

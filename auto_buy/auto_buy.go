@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"regular_input/ahr999"
@@ -50,7 +51,11 @@ func NewAutoBuyTask(config *Config, apiKey, secretKey, proxyUrl string) *AutoBuy
 
 	// 初始化消息推送器
 	task.initPushers()
-	task.pushFormattedMessage(helper.NewFormattedMessage(helper.MessageTypeInfo, "定投任务", "定投任务启动成功"))
+	btcPrice, err := task.exchangeAPI.GetBTCPrice(context.Background())
+	if err != nil {
+		log.Println("[定投任务] 获取BTC价格失败", err)
+	}
+	task.pushFormattedMessage(helper.NewFormattedMessage(helper.MessageTypeInfo, "定投任务", "定投任务启动成功\n当前BTC价格:"+strconv.FormatFloat(btcPrice, 'f', -1, 64)))
 
 	return task
 }
