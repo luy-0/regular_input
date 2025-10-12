@@ -5,8 +5,8 @@
       "log_level": "info"
     },
     "params_config": {
-      "debug": false,
-      "base_amount": 25,
+      "debug": true,
+      "base_amount": 100,
       "use_ahr999": true,
       "ahr999_timer_table": {
         "<0.45": 8,
@@ -25,7 +25,8 @@
       "enabled": true,
       "push_method": [
           "telegram",
-          "lark"
+          "lark",
+          "wechat"
       ]
     }
   }

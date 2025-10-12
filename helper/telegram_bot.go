@@ -39,7 +39,7 @@ func NewTelegramBot(token, chatID string) *TelegramBot {
 
 // SendText sends a text message to Telegram
 func (bot *TelegramBot) SendText(title, content string) (map[string]interface{}, error) {
-	parseMode := "MarkdownV2"
+	parseMode := ""
 	payload := map[string]interface{}{
 		"chat_id":    bot.ChatID,
 		"text":       fmt.Sprintf("【%s】\n\n%s", title, content),

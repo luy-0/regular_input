@@ -11,6 +11,8 @@ import (
 	"regular_input/ahr999"
 	"regular_input/exchange_api"
 	"regular_input/helper"
+
+	"github.com/adshao/go-binance/v2"
 )
 
 // AutoBuyTask 定投任务
@@ -183,10 +185,45 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		t.pushFormattedMessage(errorMsg)
 		return err
 	}
-	log.Printf("[定投任务] 买入结果: %s", orderResult)
+	// 保存订单结果
+	orderResultStr := ""
+	if orderResult.Status == binance.OrderStatusTypeFilled {
+		orderResultStr = "订单(ID: " + strconv.FormatInt(orderResult.OrderID, 10) + ")已成交"
+	} else if orderResult.Status == binance.OrderStatusTypeNew {
+		orderResultStr = "订单(ID: " + strconv.FormatInt(orderResult.OrderID, 10) + ")已创建"
+		// 开启一个间隔 5 秒 重复 12 次的协程，检查订单状态，包含空指针防护
+		go func(orderID int64, exchAPI *exchange_api.Client, push func(*helper.FormattedMessage)) {
+			var lastErr error
+			var orderStatus_ binance.OrderStatusType
+			for i := 0; i < 12; i++ {
+				time.Sleep(5 * time.Second)
+				orderStatus_, lastErr = exchAPI.GetOrderStatus(ctx, symbol, orderID)
+				if lastErr != nil {
+					continue
+				}
+				if orderStatus_ == binance.OrderStatusTypeFilled {
+					break
+				}
+			}
+			if orderStatus_ == binance.OrderStatusTypeFilled {
+				msg := helper.NewFormattedMessage(helper.MessageTypeSuccess, "订单已成交", "ID 为 "+strconv.FormatInt(orderID, 10)+"的订单已成交")
+				push(msg)
+			} else {
+				errorMsg := "暂未成交, 请手动检查"
+				if lastErr != nil {
+					errorMsg = lastErr.Error()
+				}
+				msg := helper.NewFormattedMessage(helper.MessageTypeInfo, "订单未成交", "ID 为 "+strconv.FormatInt(orderID, 10)+"的订单未成交\n"+errorMsg)
+				push(msg)
+			}
+		}(orderResult.OrderID, t.exchangeAPI, t.pushFormattedMessage)
+	} else {
+		orderResultStr = string(orderResult.Status)
+	}
+	log.Printf("[定投任务] 买入结果: %s", orderResultStr)
 
 	// 4. 发送通知
-	formattedMsg := helper.FormatDCAReport(false, btcPrice, ahr999Value, inputAmount, orderResult, nil)
+	formattedMsg := helper.FormatDCAReport(false, btcPrice, ahr999Value, inputAmount, orderResultStr, nil)
 	t.pushFormattedMessage(formattedMsg)
 
 	return nil

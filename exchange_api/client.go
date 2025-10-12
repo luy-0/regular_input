@@ -371,10 +371,10 @@ func (c *Client) BuyCoinByMarketPrice(ctx context.Context, symbol string, amount
 // 依照传入的 Symbol 和 Amount 按照最优价购买指定数量的币
 // 参数: symbol: 币种名称(BTCUSDT), amount: 购买金额(USDT)
 // 首先获取当前订单盘口，然后根据盘口价格计算最优价
-func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount float64) (string, error) {
+func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount float64) (binance.CreateOrderResponse, error) {
 	bestSellPrice, _, err := c.GetBestPrice(ctx, symbol)
 	if err != nil {
-		return fmt.Sprintf("获取%s订单盘口失败: %v", symbol, err), err
+		return binance.CreateOrderResponse{}, fmt.Errorf("获取%s订单盘口失败: %v", symbol, err)
 	}
 	acount := amount / bestSellPrice
 	acount = math.Round(acount*100000) / 100000
@@ -386,9 +386,21 @@ func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount f
 		Quantity(strconv.FormatFloat(acount, 'f', -1, 64)).
 		Do(ctx)
 	if err != nil {
-		return fmt.Sprintf("购买%s失败: %v", symbol, err), err
+		return binance.CreateOrderResponse{}, fmt.Errorf("购买%s失败: %v", symbol, err)
 	}
-	return jsonAnything(order), nil
+	return *order, nil
+}
+
+// 根据 order ID 查询订单状态
+func (c *Client) GetOrderStatus(ctx context.Context, symbol string, orderId int64) (binance.OrderStatusType, error) {
+	order, err := c.spotClient.NewGetOrderService().Symbol(symbol).OrderID(orderId).Do(ctx)
+	if order == nil {
+		return "订单不存在", fmt.Errorf("订单不存在")
+	}
+	if err != nil {
+		return "订单状态获取失败", fmt.Errorf("获取订单状态失败: %v", err)
+	}
+	return order.Status, nil
 }
 
 // 获取当前订单盘口
