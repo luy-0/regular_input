@@ -5,8 +5,8 @@
       "log_level": "info"
     },
     "params_config": {
-      "debug": true,
-      "base_amount": 100,
+      "debug": false,
+      "base_amount": 25,
       "use_ahr999": true,
       "ahr999_timer_table": {
         "<0.45": 8,

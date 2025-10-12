@@ -111,7 +111,7 @@ func (t *AutoBuyTask) initPushers() {
 func (t *AutoBuyTask) Execute(ctx context.Context) error {
 	log.Printf("[定投任务] 开始执行定投任务: %s", t.config.Name)
 
-	var amount float64
+	var inputAmount float64
 	var ahr999Value float64
 	var btcPrice float64
 	var err error
@@ -144,9 +144,10 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		}
 		log.Printf("[定投任务] AHR999 区间: %s, 倍数: %.2f, 定投金额: %.2f USDT",
 			rangeStr, multiplier, amount)
+		inputAmount = amount
 	} else {
 		// 不使用 AHR999，直接使用基础金额
-		amount = t.config.BaseAmount
+		inputAmount = t.config.BaseAmount
 		btcPrice, err = t.exchangeAPI.GetBTCPrice(ctx)
 		if err != nil {
 			errMsg := fmt.Sprintf("获取 BTC 价格失败: %v", err)
@@ -155,13 +156,13 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 			t.pushFormattedMessage(errorMsg)
 			return fmt.Errorf(errMsg)
 		}
-		log.Printf("[定投任务] 当前 BTC 价格: %.2f, 定投金额: %.2f USDT", btcPrice, amount)
+		log.Printf("[定投任务] 当前 BTC 价格: %.2f, 定投金额: %.2f USDT", btcPrice, inputAmount)
 	}
 
 	// 3. 执行买入操作
 	if t.config.Debug {
 		// 调试模式：只记录日志，不实际买入
-		formattedMsg := helper.FormatDCAReport(true, btcPrice, ahr999Value, amount, "", nil)
+		formattedMsg := helper.FormatDCAReport(true, btcPrice, ahr999Value, inputAmount, "", nil)
 		log.Printf("[定投任务] 调试模式：%s", formattedMsg.ToPlainText())
 		t.pushFormattedMessage(formattedMsg)
 		return nil
@@ -173,11 +174,19 @@ func (t *AutoBuyTask) Execute(ctx context.Context) error {
 		symbol = "BTCUSDT" // 默认 BTC
 	}
 
-	orderResult := t.exchangeAPI.BuyCoinByMarketPrice(ctx, symbol, amount)
+	// 使用限价单购买
+	orderResult, err := t.exchangeAPI.BuyCoinByBestPrice(ctx, symbol, inputAmount)
+	if err != nil {
+		errMsg := fmt.Sprintf("买入失败: %v", err)
+		log.Printf("[定投任务失败] %s", errMsg)
+		errorMsg := helper.NewFormattedMessage(helper.MessageTypeError, "定投任务失败", errMsg)
+		t.pushFormattedMessage(errorMsg)
+		return err
+	}
 	log.Printf("[定投任务] 买入结果: %s", orderResult)
 
 	// 4. 发送通知
-	formattedMsg := helper.FormatDCAReport(false, btcPrice, ahr999Value, amount, orderResult, nil)
+	formattedMsg := helper.FormatDCAReport(false, btcPrice, ahr999Value, inputAmount, orderResult, nil)
 	t.pushFormattedMessage(formattedMsg)
 
 	return nil

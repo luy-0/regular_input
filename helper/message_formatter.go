@@ -81,35 +81,35 @@ func FormatDCAReport(isDebug bool, btcPrice, ahr999Value, amount float64, orderR
 	// 确定消息类型和标题
 	if isDebug {
 		msgType = MessageTypeDebug
-		title = "定投任务（调试模式）"
+		title = "*定投任务（调试模式）*"
 	} else if err != nil {
 		msgType = MessageTypeError
-		title = "定投任务失败"
+		title = "**定投任务失败**"
 	} else {
 		msgType = MessageTypeSuccess
-		title = "定投任务成功"
+		title = "**定投任务成功**"
 	}
 
 	// 构建内容
-	content.WriteString(fmt.Sprintf("💰 BTC 价格: $%.2f\n", btcPrice))
+	content.WriteString(fmt.Sprintf("💰 **BTC 价格**: $%.2f\n", btcPrice))
 
 	if ahr999Value > 0 {
-		content.WriteString(fmt.Sprintf("📊 AHR999 值: %.4f\n", ahr999Value))
+		content.WriteString(fmt.Sprintf("📊 **AHR999 值**: %.4f\n", ahr999Value))
 
 		// 添加AHR999区间说明
 		interval := getAHR999Interval(ahr999Value)
-		content.WriteString(fmt.Sprintf("📈 投资区间: %s\n", interval))
+		content.WriteString(fmt.Sprintf("📈 **投资区间**: %s\n", interval))
 	}
 
-	content.WriteString(fmt.Sprintf("💵 定投金额: %.2f USDT\n", amount))
+	content.WriteString(fmt.Sprintf("💵 **定投金额**: %.2f USDT\n", amount))
 
 	if !isDebug && orderResult != "" {
-		content.WriteString("\n📋 订单详情:\n")
+		content.WriteString("\n📋 **订单详情**:\n")
 		content.WriteString(formatOrderResult(orderResult))
 	}
 
 	if err != nil {
-		content.WriteString(fmt.Sprintf("\n⚠️ 错误信息: %v", err))
+		content.WriteString(fmt.Sprintf("\n⚠️ **错误信息**: %v", err))
 	}
 
 	msg := NewFormattedMessage(msgType, title, content.String())
@@ -124,25 +124,25 @@ func FormatDCAReport(isDebug bool, btcPrice, ahr999Value, amount float64, orderR
 func getAHR999Interval(value float64) string {
 	switch {
 	case value < 0.45:
-		return "极度低估区间 🚀"
+		return "**极度低估区间** 🚀"
 	case value >= 0.45 && value < 0.6:
-		return "低估区间 📈"
+		return "**低估区间** 📈"
 	case value >= 0.6 && value < 0.8:
-		return "较低估区间 📊"
+		return "**较低估区间** 📊"
 	case value >= 0.8 && value < 0.9:
-		return "略低估区间 📉"
+		return "**略低估区间** 📉"
 	case value >= 0.9 && value < 1.1:
-		return "正常区间 ⚖️"
+		return "**正常区间** ⚖️"
 	case value >= 1.1 && value < 1.2:
-		return "略高估区间 ⚠️"
+		return "**略高估区间** ⚠️"
 	case value >= 1.2 && value < 1.4:
-		return "高估区间 ⛔"
+		return "**高估区间** ⛔"
 	case value >= 1.4 && value < 1.6:
-		return "较高估区间 🛑"
+		return "**较高估区间** 🛑"
 	case value >= 1.6 && value < 1.8:
-		return "高估区间 🚫"
+		return "**高估区间** 🚫"
 	default:
-		return "极度高估区间 ⛔"
+		return "**极度高估区间** ⛔"
 	}
 }
 
@@ -164,17 +164,28 @@ func formatOrderResult(result string) string {
 func (m *FormattedMessage) ToTelegramFormat() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("%s %s\n", m.Emoji, m.Title))
-	sb.WriteString(fmt.Sprintf("🕐 %s\n\n", m.Timestamp.Format("2006-01-02 15:04:05")))
-	sb.WriteString(m.Content)
+	sprintfMarkdown := func(fmts string, a ...any) string {
+		s := fmt.Sprintf(fmts, a...)
+		s = strings.ReplaceAll(s, "-", "\\-")
+		s = strings.ReplaceAll(s, "_", "\\_")
+		s = strings.ReplaceAll(s, "*", "\\*")
+		// s = strings.ReplaceAll(s, ".", "\\.")
+		s = strings.ReplaceAll(s, ">", "\\>")
+		s = strings.ReplaceAll(s, "<", "\\<")
+		s = strings.ReplaceAll(s, "=", "\\=")
+		return s
+	}
+
+	sb.WriteString((sprintfMarkdown("%s %s\n", m.Emoji, m.Title)))
+	sb.WriteString(sprintfMarkdown("🕐 %s\n\n", m.Timestamp.Format("2006-01-02 15:04:05")))
+	sb.WriteString(sprintfMarkdown(m.Content))
 
 	if len(m.Metadata) > 0 {
 		sb.WriteString("\n\n📊 统计信息:\n")
 		for key, value := range m.Metadata {
-			sb.WriteString(fmt.Sprintf("• %s: %v\n", key, value))
+			sb.WriteString(sprintfMarkdown("• %s: %v\n", key, value))
 		}
 	}
-
 	return sb.String()
 }
 

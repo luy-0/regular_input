@@ -39,13 +39,20 @@ func NewTelegramBot(token, chatID string) *TelegramBot {
 
 // SendText sends a text message to Telegram
 func (bot *TelegramBot) SendText(title, content string) (map[string]interface{}, error) {
-	parseMode := "HTML"
+	parseMode := "MarkdownV2"
 	payload := map[string]interface{}{
 		"chat_id":    bot.ChatID,
 		"text":       fmt.Sprintf("【%s】\n\n%s", title, content),
 		"parse_mode": parseMode,
 	}
-	return bot.sendMessage("sendMessage", payload)
+	message, _ := bot.sendMessage("sendMessage", payload)
+	success := message["ok"].(bool)
+	if !success {
+		payload["parse_mode"] = ""
+		return bot.sendMessage("sendMessage", payload)
+	} else {
+		return message, nil
+	}
 }
 
 // Push 实现 MessagePusher 接口

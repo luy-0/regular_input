@@ -360,21 +360,21 @@ func (c *Client) GetBTCBalance(ctx context.Context) string {
 
 // 依照传入的 Symbol 和 Amount 按照市价购买指定数量的币
 // 参数: symbol: 币种名称(BTCUSDT), amount: 购买数量(USDT)
-func (c *Client) BuyCoinByMarketPrice(ctx context.Context, symbol string, amount float64) string {
+func (c *Client) BuyCoinByMarketPrice(ctx context.Context, symbol string, amount float64) (string, error) {
 	order, err := c.spotClient.NewCreateOrderService().Symbol(symbol).Side(binance.SideTypeBuy).Type(binance.OrderTypeMarket).QuoteOrderQty(strconv.FormatFloat(amount, 'f', -1, 64)).Do(ctx)
 	if err != nil {
-		return fmt.Sprintf("购买%s失败: %v", symbol, err)
+		return fmt.Sprintf("购买%s失败: %v", symbol, err), err
 	}
-	return jsonAnything(order)
+	return jsonAnything(order), nil
 }
 
 // 依照传入的 Symbol 和 Amount 按照最优价购买指定数量的币
 // 参数: symbol: 币种名称(BTCUSDT), amount: 购买金额(USDT)
 // 首先获取当前订单盘口，然后根据盘口价格计算最优价
-func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount float64) string {
+func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount float64) (string, error) {
 	bestSellPrice, _, err := c.GetBestPrice(ctx, symbol)
 	if err != nil {
-		return fmt.Sprintf("获取%s订单盘口失败: %v", symbol, err)
+		return fmt.Sprintf("获取%s订单盘口失败: %v", symbol, err), err
 	}
 	acount := amount / bestSellPrice
 	acount = math.Round(acount*100000) / 100000
@@ -386,9 +386,9 @@ func (c *Client) BuyCoinByBestPrice(ctx context.Context, symbol string, amount f
 		Quantity(strconv.FormatFloat(acount, 'f', -1, 64)).
 		Do(ctx)
 	if err != nil {
-		return fmt.Sprintf("购买%s失败: %v", symbol, err)
+		return fmt.Sprintf("购买%s失败: %v", symbol, err), err
 	}
-	return jsonAnything(order)
+	return jsonAnything(order), nil
 }
 
 // 获取当前订单盘口
