@@ -1,60 +1,96 @@
-# BTC 定投机器人
+# 基于 AHR999 指标的 BTC 定投机器人
 
-基于 AHR999 指标的智能 BTC 定投系统，支持多种消息推送方式。
+基于 AHR999 指标的智能 BTC 定投系统，支持多种消息推送方式和灵活的配置管理。
 
-## 功能特性
+## 🚀 功能特性
 
-- 🤖 基于 AHR999 指标的智能定投策略
-- ⏰ 支持 cron 表达式的定时调度
-- 📱 多平台消息推送（Telegram、飞书、微信、Lark）
-- 🔧 灵活的配置管理
-- 🛡️ 调试模式支持
-- 🚀 Docker 容器化部署
+- 🤖 **智能定投策略**: 基于 AHR999 指标自动调整定投金额
+- ⏰ **定时调度**: 支持 cron 表达式的秒级定时任务
+- 📱 **多平台推送**: 支持 Telegram、飞书、Lark、微信等多种消息推送
+- 🔧 **灵活配置**: JSON 配置文件 + 环境变量双重配置管理
+- 🛡️ **安全模式**: 调试模式支持，避免误操作
+- 🚀 **容器化部署**: 完整的 Docker 支持
+- 📊 **实时监控**: 订单状态跟踪和消息通知
+- 🔄 **自动重试**: 订单状态检查和自动重试机制
 
-## 项目结构
+## 📁 项目结构
 
 ```
 regular_input/
-├── ahr999/                # AHR999 指标计算
-│   ├── ahr999.go
-│   └── calculate_amount.go
+├── ahr999/                # AHR999 指标计算模块
+│   ├── ahr999.go         # AHR999 数据获取和计算
+│   └── calculate_amount.go # 定投金额计算逻辑
 ├── auto_buy/              # 定投任务核心逻辑
-│   └── auto_buy.go
-├── config/                # 配置管理
-│   ├── config.go
-│   └── env.go
+│   └── auto_buy.go       # 定投任务执行器
+├── config/                # 配置管理模块
+│   ├── config.go         # 配置结构和验证
+│   └── env.go            # 环境变量管理
 ├── exchange_api/          # 交易所 API 客户端
-│   ├── client.go
-│   └── example.go
+│   ├── client.go         # 币安 API 封装
+│   └── example.go        # API 使用示例
 ├── helper/                # 消息推送助手
-│   ├── lark_bot.go
-│   ├── messages.go
-│   ├── telegram_bot.go
-│   ├── test_pushers.go
-│   └── wechat_bot.go
+│   ├── lark_bot.go       # Lark/飞书推送
+│   ├── telegram_bot.go   # Telegram 推送
+│   ├── wechat_bot.go     # 微信推送
+│   ├── messages.go       # 消息格式定义
+│   ├── message_formatter.go # 消息格式化
+│   └── test_pushers.go   # 推送测试工具
 ├── scheduler/             # 定时任务调度器
-│   └── scheduler.go
+│   └── scheduler.go      # Cron 任务调度
+├── scripts/               # 部署脚本
+│   ├── docker-build.sh   # Docker 构建脚本
+│   ├── setup-env.sh      # 环境设置脚本
+│   └── validate-dockerfile.sh # Dockerfile 验证
 ├── main.go                # 程序入口
 ├── config.json.example    # 配置文件模板
 ├── Dockerfile             # Docker 构建文件
-└── README.md              # 项目说明
+├── Makefile              # 构建和部署脚本
+└── README.md             # 项目说明
 ```
 
-## 快速开始
+## 🚀 快速开始
 
 ### 1. 环境准备
 
-确保已安装 Go 1.21+ 和 Docker（可选）。
+确保已安装以下环境：
+- Go 1.21+ 
+- Docker（可选）
+- Git
 
-### 2. 配置设置
-
-复制配置文件模板：
+### 2. 克隆项目
 
 ```bash
-cp config.json.example config.json
+git clone <repository-url>
+cd regular_input
 ```
 
-编辑 `config.json` 文件：
+### 3. 配置设置
+
+#### 方式一：使用 Makefile（推荐）
+
+```bash
+# 创建配置文件
+make env
+
+# 编辑配置文件
+vim config.json
+vim .env
+```
+
+#### 方式二：手动配置
+
+```bash
+# 复制配置文件模板
+cp config.json.example config.json
+
+# 创建环境变量文件
+cp .env.example .env  # 如果存在
+# 或手动创建 .env 文件
+```
+
+### 4. 配置文件说明
+
+#### config.json 配置
 
 ```json
 {
@@ -64,7 +100,7 @@ cp config.json.example config.json
     "log_level": "info"
   },
   "params_config": {
-    "debug": true,
+    "debug": false,
     "base_amount": 100,
     "use_ahr999": true,
     "ahr999_timer_table": {
@@ -87,9 +123,7 @@ cp config.json.example config.json
 }
 ```
 
-### 3. 环境变量配置
-
-创建 `.env` 文件并配置必要的环境变量：
+#### .env 环境变量
 
 ```bash
 # 币安 API 配置（生产环境必需）
@@ -105,31 +139,32 @@ WEIXIN_FT_TOKEN=your_wechat_token
 
 # 代理配置（可选）
 HTTPS_PROXY=http://proxy:port
-
-# 调试模式
-DEBUG=true
 ```
 
-### 4. 运行程序
+### 5. 运行程序
 
-#### 方式一：使用 Makefile（推荐）
+#### 方式一：开发模式
 
 ```bash
-# 查看所有可用命令
-make help
+# 安装依赖
+make deps
 
-# 快速开始
-make config    # 创建配置文件
-make env       # 创建环境变量文件
-make dev       # 开发模式运行
-
-# Docker 部署
-make build-docker  # 构建镜像
-make run          # 运行容器
-make logs         # 查看日志
+# 开发模式运行
+make dev
 ```
 
-#### 方式二：直接运行
+#### 方式二：Docker 部署
+
+```bash
+# 构建并运行
+make build-docker
+make run
+
+# 查看日志
+make logs
+```
+
+#### 方式三：直接运行
 
 ```bash
 # 安装依赖
@@ -139,80 +174,42 @@ go mod tidy
 go run main.go
 ```
 
-#### 方式三：Docker 手动运行
+## 📊 AHR999 定投策略
 
-```bash
-# 构建镜像
-docker build -t btc-dca-bot .
+AHR999 是一个用于判断比特币投资时机的指标，系统根据该指标自动调整定投金额：
 
-# 运行容器
-docker run -d \
-  --name btc-dca-bot \
-  -v $(pwd)/config.json:/app/config.json \
-  -e BINANCE_API_KEY=your_api_key \
-  -e BINANCE_SECRET_KEY=your_secret_key \
-  -e TELEGRAM_BOT_TOKEN=your_bot_token \
-  -e TELEGRAM_CHAT_ID=your_chat_id \
-  btc-dca-bot
-```
+| AHR999 区间 | 投资建议 | 定投倍数 | 说明 |
+|------------|---------|---------|------|
+| < 0.45 | 极度低估 | 8x | 大幅加仓 |
+| 0.45-0.6 | 低估 | 4x | 适度加仓 |
+| 0.6-0.8 | 较低估 | 2x | 正常定投 |
+| 0.8-0.9 | 略低估 | 1x | 标准定投 |
+| 0.9-1.1 | 正常 | 0.5x | 减半定投 |
+| 1.1-1.2 | 略高估 | 0.25x | 少量定投 |
+| 1.2-1.4 | 高估 | 0.125x | 微量定投 |
+| 1.4-1.6 | 较高估 | 0x | 暂停定投 |
+| 1.6-1.8 | 高估 | 0x | 暂停定投 |
+| > 1.8 | 极度高估 | 0x | 暂停定投 |
 
-## 配置说明
+## 📱 消息推送
 
-### 任务配置 (task_config)
+支持多种消息推送方式，可同时配置多个：
 
-- `name`: 任务名称
-- `schedule`: cron 定时表达式（支持秒级）
-- `log_level`: 日志级别
+### Telegram
+- 需要：`TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
+- 特点：实时推送，支持富文本格式
 
-### 参数配置 (params_config)
+### 飞书/Lark
+- 需要：`FEISHU_TOKEN` 或 `LARK_TOKEN`
+- 特点：企业级消息推送
 
-- `debug`: 调试模式（true=模拟交易，false=真实交易）
-- `base_amount`: 基础定投金额（USDT）
-- `use_ahr999`: 是否启用 AHR999 指标
-- `ahr999_timer_table`: AHR999 倍数表
+### 微信
+- 需要：`WEIXIN_FT_TOKEN`
+- 特点：通过 Server 酱推送
 
-### 消息配置 (message_config)
-
-- `enabled`: 是否启用消息推送
-- `push_method`: 推送方式列表
-
-## AHR999 定投策略
-
-AHR999 是一个用于判断比特币投资时机的指标：
-
-- **< 0.45**: 极度低估，8倍定投
-- **0.45-0.6**: 低估，4倍定投
-- **0.6-0.8**: 较低估，2倍定投
-- **0.8-0.9**: 略低估，1倍定投
-- **0.9-1.1**: 正常，0.5倍定投
-- **1.1-1.2**: 略高估，0.25倍定投
-- **1.2-1.4**: 高估，0.125倍定投
-- **1.4-1.6**: 较高估，暂停定投
-- **1.6-1.8**: 高估，暂停定投
-- **> 1.8**: 极度高估，暂停定投
-
-## 消息推送
-
-支持多种消息推送方式：
-
-- **Telegram**: 需要 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
-- **飞书**: 需要 `FEISHU_TOKEN`
-- **Lark**: 需要 `LARK_TOKEN`
-- **微信**: 需要 `WEIXIN_FT_TOKEN`
-
-## 安全注意事项
-
-1. **API 密钥安全**: 请妥善保管币安 API 密钥，建议设置 IP 白名单
-2. **权限控制**: API 密钥只需要现货交易权限，不要开启提币权限
-3. **测试模式**: 建议先在调试模式下测试，确认无误后再切换到生产模式
-4. **资金安全**: 建议使用小额资金进行测试
-
-## Makefile 命令说明
-
-本项目提供了丰富的 Makefile 命令来简化开发、构建和部署流程：
+## 🛠️ Makefile 命令
 
 ### 📦 构建相关
-
 ```bash
 make build        # 构建 Go 二进制文件
 make build-docker # 构建 Docker 镜像
@@ -221,7 +218,6 @@ make clean        # 清理构建文件
 ```
 
 ### 🐳 Docker 相关
-
 ```bash
 make run          # 运行 Docker 容器
 make stop         # 停止 Docker 容器
@@ -231,7 +227,6 @@ make status       # 查看容器状态
 ```
 
 ### 🔧 开发相关
-
 ```bash
 make dev          # 开发模式运行
 make test         # 运行测试
@@ -240,7 +235,6 @@ make fmt          # 格式化代码
 ```
 
 ### ⚙️ 配置相关
-
 ```bash
 make config       # 创建配置文件
 make env          # 创建环境变量文件
@@ -248,37 +242,39 @@ make validate     # 验证配置
 ```
 
 ### 📊 监控相关
-
 ```bash
 make health       # 健康检查
 make stats        # 查看统计信息
 ```
 
-### 🚀 快速开始示例
+## 🔒 安全注意事项
 
-```bash
-# 1. 克隆项目
-git clone <repository-url>
-cd regular_input
+1. **API 密钥安全**
+   - 妥善保管币安 API 密钥
+   - 建议设置 IP 白名单
+   - 只开启现货交易权限，不要开启提币权限
 
-# 2. 创建配置文件
-make config
-make env
+2. **测试模式**
+   - 建议先在调试模式下测试
+   - 确认无误后再切换到生产模式
+   - 使用小额资金进行测试
 
-# 3. 编辑配置文件
-vim config.json
-vim .env
+3. **配置验证**
+   - 使用 `make validate` 验证配置
+   - 定期检查配置文件格式
 
-# 4. 开发模式运行
-make dev
+## 🏗️ 技术架构
 
-# 或者 Docker 部署
-make build-docker
-make run
-make logs
-```
+### 核心模块
 
-## 技术栈
+- **调度器** (`scheduler/`): 基于 robfig/cron 的定时任务调度
+- **定投引擎** (`auto_buy/`): 核心定投逻辑和订单管理
+- **AHR999 计算** (`ahr999/`): 指标获取和金额计算
+- **交易所 API** (`exchange_api/`): 币安 API 封装
+- **消息推送** (`helper/`): 多平台消息推送支持
+- **配置管理** (`config/`): 配置加载和验证
+
+### 技术栈
 
 - **语言**: Go 1.21+
 - **调度引擎**: robfig/cron/v3
@@ -287,6 +283,64 @@ make logs
 - **容器化**: Docker
 - **构建工具**: Make
 
-## 许可证
+## 📈 监控和日志
 
-MIT License 
+### 日志级别
+- `info`: 一般信息
+- `warn`: 警告信息
+- `error`: 错误信息
+
+### 监控指标
+- 定投执行状态
+- 订单成交情况
+- AHR999 指标变化
+- 系统健康状态
+
+## 🐛 故障排除
+
+### 常见问题
+
+1. **配置文件错误**
+   ```bash
+   make validate  # 验证配置格式
+   make fix-config  # 修复配置文件问题
+   ```
+
+2. **API 连接失败**
+   - 检查网络连接
+   - 验证 API 密钥
+   - 检查代理设置
+
+3. **消息推送失败**
+   - 验证推送配置
+   - 检查网络连接
+   - 查看日志信息
+
+### 调试模式
+
+```bash
+# 启用调试模式
+export DEBUG=true
+
+# 或修改 config.json
+{
+  "params_config": {
+    "debug": true
+  }
+}
+```
+
+## 📄 许可证
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📞 支持
+
+如有问题，请通过以下方式联系：
+- 提交 GitHub Issue
+- 查看项目文档
+- 检查日志信息

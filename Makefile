@@ -198,8 +198,6 @@ env:
 		echo "# 代理配置（可选，如不需要代理请留空）" >> .env; \
 		echo "# HTTPS_PROXY=http://proxy:port" >> .env; \
 		echo "" >> .env; \
-		echo "# 调试模式" >> .env; \
-		echo "DEBUG=true" >> .env; \
 		echo "✅ 已创建 .env 文件"; \
 		echo "📝 请编辑 .env 文件填入您的实际配置"; \
 	else \
