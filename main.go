@@ -93,7 +93,7 @@ func main() {
 	log.Printf("定时任务调度器已启动，任务将在 %s 执行", config.TaskConfig.Schedule)
 
 	// 如果是调试模式，立即执行一次任务
-	if config.ParamsConfig.Debug {
+	if config.ParamsConfig.ExecuteNow {
 		log.Println("调试模式：立即执行一次任务...")
 		go func() {
 			time.Sleep(2 * time.Second) // 等待2秒让调度器完全启动

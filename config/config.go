@@ -28,6 +28,7 @@ type ParamsConfig struct {
 	BaseAmount       float64            `json:"base_amount"`        // 基础金额
 	UseAhr999        bool               `json:"use_ahr999"`         // 是否使用 AHR999 指标
 	Ahr999TimerTable map[string]float64 `json:"ahr999_timer_table"` // AHR999 倍数表
+	ExecuteNow       bool               `json:"execute_now"`        // 是否立即执行
 }
 
 // MessageConfig 消息推送配置

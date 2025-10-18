@@ -6,6 +6,7 @@
     },
     "params_config": {
       "debug": false,
+      "execute_now": true,
       "base_amount": 100,
       "use_ahr999": true,
       "ahr999_timer_table": {
